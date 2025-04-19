@@ -21,9 +21,7 @@ int parse_http_request(char *buffer, char *command, char *key, char *value) {
     if (!body) {
         return 0;
     }
-    
     body += 4; 
-    
     
     char *token = strtok(body, "&");
     while (token != NULL) {
@@ -87,13 +85,11 @@ void create_http_response(char *response, int status, const char *content_type, 
 }
 
 int main() {
-    
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
         perror("Failed to create socket");
         exit(EXIT_FAILURE);
     }
-    
     
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
@@ -101,19 +97,16 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(IPADDR);
     server_addr.sin_port = htons(PORT);
     
-    
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Failed to bind socket");
         exit(EXIT_FAILURE);
     }
-    
     
     if (listen(server_fd, 10) < 0) {
         perror("Failed to listen");
@@ -122,7 +115,6 @@ int main() {
     
     printf("Server listening on %s:%d\n", IPADDR, PORT);
     
-    
     struct hashmap *cache = hashmap_new(sizeof(struct item), 0, 0, 0, hash, cmp, free_item, NULL);
     if (hashmap_oom(cache)) {
         perror("Failed to create hashmap");
@@ -130,7 +122,6 @@ int main() {
     }
     
     while (1) {
-        
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
@@ -140,7 +131,6 @@ int main() {
             continue;
         }
         
-        
         char buffer[BUFFER_SIZE] = {0};
         ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
         
@@ -148,7 +138,6 @@ int main() {
             close(client_fd);
             continue;
         }
-        
         
         char command[10] = {0};
         char key[256] = {0};
@@ -163,12 +152,9 @@ int main() {
             
             
             char response[BUFFER_SIZE] = {0};
-            
             if (strcmp(command, "GET") == 0) {
-                
                 struct item get_item;
                 get_item.key = decoded_key;
-                
                 
                 struct item *result = (struct item *)hashmap_get(cache, &get_item);
                 
@@ -182,7 +168,6 @@ int main() {
                                         "{\"status\":\"error\",\"message\":\"Key not found\"}");
                 }
             } else if (strcmp(command, "SET") == 0) {
-                
                 struct item *new_item = item_from_kv(decoded_key, decoded_value);
                 
                 if (new_item) {
@@ -205,17 +190,14 @@ int main() {
             
             send(client_fd, response, strlen(response), 0);
         } else {
-            
             char response[BUFFER_SIZE];
             create_http_response(response, 400, "application/json", 
                                 "{\"status\":\"error\",\"message\":\"Invalid request format\"}");
             send(client_fd, response, strlen(response), 0);
         }
         
-        
         close(client_fd);
     }
-    
     
     hashmap_free(cache);
     close(server_fd);
