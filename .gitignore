@@ -1,0 +1,10 @@
+main
+server
+
+*.o
+*.out
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
